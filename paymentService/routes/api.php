@@ -2,7 +2,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
+use App\Models\Payment;
 
 Route::post('/payments', function (Request $request) {
     $orderId = $request->order_id;
@@ -18,28 +18,26 @@ Route::post('/payments', function (Request $request) {
         return response()->json(["message" => "Order tidak ditemukan"], 404);
     }
 
-    // Safely get user and product names, handling array wrapper if present
-    $user = $order['user'];
-    $product = $order['product'];
-    
-    $userName = isset($user[0]) ? ($user[0]['name'] ?? 'Unknown') : ($user['name'] ?? 'Unknown');
-    $productName = isset($product[0]) ? ($product[0]['name'] ?? 'Unknown') : ($product['name'] ?? 'Unknown');
+    $status = "LUNAS";
+    if (($order['user']['name'] ?? '') == 'Data tidak ditemukan' || ($order['product']['name'] ?? '') == 'Data tidak ditemukan') {
+        $status = "Tidak diketahui";
+    }
 
-    $result = [
+    $payment = Payment::create([
+        "order_id" => $orderId,
+        "status" => $status
+    ]);
+
+    return [
+        "payment_id" => $payment->id,
         "order_id" => $order['order_id'],
-        "user_name" => $userName,
-        "product_name" => $productName,
-        "status" => "LUNAS",
-        "paid_at" => now()
+        "user_name" => $order['user']['name'] ?? 'Data tidak ditemukan',
+        "product_name" => $order['product']['name'] ?? 'Data tidak ditemukan',
+        "status" => $payment->status,
+        "paid_at" => $payment->created_at
     ];
-
-    $payments = Cache::get('payments', []);
-    $payments[] = $result;
-    Cache::forever('payments', $payments);
-
-    return $result;
 });
 
 Route::get('/payments', function () {
-    return Cache::get('payments', []);
+    return Payment::all();
 });

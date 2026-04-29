@@ -2,7 +2,36 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
+use App\Models\Order;
+
+function fetchOrderDetails($order) {
+    $userResponse = Http::get("http://localhost:8001/api/users/{$order->user_id}");
+    $productResponse = Http::get("http://localhost:8002/api/products/{$order->product_id}");
+
+    $user = $userResponse->json();
+    $product = $productResponse->json();
+
+    $status = $order->status;
+    
+    // Check if data is actually found or missing
+    if ($userResponse->failed() || (isset($user['message']) && $user['message'] == "user tidak ditemukan")) {
+        $user = ['name' => 'Data tidak ditemukan'];
+        $status = "Tidak diketahui";
+    }
+    
+    if ($productResponse->failed() || (isset($product['message']) && $product['message'] == "Product not found")) {
+        $product = ['name' => 'Data tidak ditemukan'];
+        $status = "Tidak diketahui";
+    }
+
+    return [
+        "order_id" => $order->id,
+        "user" => $user,
+        "product" => $product,
+        "status" => $status,
+        "created_at" => $order->created_at
+    ];
+}
 
 Route::post('/orders', function (Request $request) {
     $userId = $request->user_id;
@@ -12,46 +41,24 @@ Route::post('/orders', function (Request $request) {
         return response()->json(["message" => "User ID and Product ID are required"], 400);
     }
 
-    // Komunikasi Antar Service
-    $userResponse = Http::get("http://localhost:8001/api/users/$userId");
-    $productResponse = Http::get("http://localhost:8002/api/products/$productId");
+    $order = Order::create([
+        "user_id" => $userId,
+        "product_id" => $productId,
+        "status" => "pending"
+    ]);
 
-    $user = $userResponse->json();
-    $product = $productResponse->json();
-
-    // Validasi apakah service lain mengembalikan data yang benar
-    if ($userResponse->failed() || $productResponse->failed() || isset($user['message']) || isset($product['message'])) {
-        return response()->json(["message" => "User atau Product tidak ditemukan"], 404);
-    }
-
-    // Pastikan data bukan array koleksi (jika service salah mengembalikan list)
-    if (isset($user[0])) $user = $user[0];
-    if (isset($product[0])) $product = $product[0];
-
-    $orders = Cache::get('orders', []);
-    
-    $newOrder = [
-        "order_id" => count($orders) + 1,
-        "user" => $user,
-        "product" => $product,
-        "status" => "pending",
-        "created_at" => now()
-    ];
-
-    $orders[] = $newOrder;
-    Cache::forever('orders', $orders);
-
-    return $newOrder;
+    return fetchOrderDetails($order);
 });
 
 Route::get('/orders', function () {
-    return Cache::get('orders', []);
+    $orders = Order::all();
+    return $orders->map(function($order) {
+        return fetchOrderDetails($order);
+    });
 });
 
 Route::get('/orders/{id}', function ($id) {
-    $orders = Cache::get('orders', []);
-    foreach ($orders as $order) {
-        if ($order['order_id'] == $id) return $order;
-    }
-    return response()->json(["message" => "Order tidak ditemukan"], 404);
+    $order = Order::find($id);
+    if (!$order) return response()->json(["message" => "Order tidak ditemukan"], 404);
+    return fetchOrderDetails($order);
 });
