@@ -1,100 +1,64 @@
 # Pembagian Tugas UAS: Integrasi Aplikasi Enterprise
 
 **Proyek:** Pengembangan Studi Kasus Sistem Terintegrasi Berbasis Microservices (Backend Only)
-**Anggota Tim:**
-1. Afandi (Koordinator & Order Service)
-2. Vincent (User Service)
-3. Salwa (Product Service)
-4. Niken (Payment Service)
+
+**Anggota Tim & Fokus Service:**
+1. **Afandi** (Ketua / Koordinator) - `orderService` & `cafe-docker-compose`
+2. **Vincent** - `userService`
+3. **Salwa** - `productService`
+4. **Niken** - `paymentService`
 
 ---
 
-## 1. Afandi (Ketua Kelompok & Order Service)
-**Fokus Repository:** `cafe-docker-compose` & `orderService`
+## Rincian Tugas & Panduan Pengerjaan per Anggota
 
-**Tugas Utama & Cara Pengerjaan:**
-- **Infrastruktur Global (docker-compose):** 
-  - **Cara:** Mengedit `docker-compose.yml` menambahkan konfigurasi `init.sql` untuk men-generate 4 database secara otomatis (`user_db`, `product_db`, dll). Menambahkan *image* `hasura/graphql-engine` dan `postgres` (sebagai penampung metadata Hasura).
-- **Service Development (Order):**
-  - **Cara:** Masuk ke folder `orderService`, ubah file `.env` dengan `DB_DATABASE=order_db` dan `DB_HOST=cafe-db`.
-  - Buat migration dan model untuk tabel `orders` (`php artisan make:model Order -m`).
-  - Buat REST API di `routes/api.php` dan `OrderController` untuk transaksi pemesanan.
-  - Setup tabel `orders` di Hasura UI (`http://localhost:8080`) untuk GraphQL query.
-
----
-
-## 2. Vincent (User Service)
-**Fokus Repository:** `userService`
-
-**Tugas Utama & Cara Pengerjaan:**
-- **Service Development (User):** 
-  - **Cara Koneksi DB:** Setelah clone repo, copy `.env.example` menjadi `.env`. Ubah nilai di dalamnya menjadi `DB_HOST=cafe-db`, `DB_PORT=3306`, `DB_DATABASE=user_db`, `DB_USERNAME=root`, `DB_PASSWORD=root`.
-  - **Cara Migrasi:** Jalankan perintah `docker exec -it user-service php artisan migrate` dari terminal utama untuk membuat tabel.
-  - **Pembuatan API:** Buat *Controller* (`php artisan make:controller UserController`) untuk fitur Register, Login, atau Get User Profile. Daftarkan rutenya di `routes/api.php`.
-  - **GraphQL:** Pastikan tabel `users` sudah kamu *track* di dalam Dashboard Hasura (port 8080) agar bisa di-query pakai GraphQL.
-- **Dokumentasi API:** 
-  - **Cara:** Buka Postman, buat *Collection* bernama `User Service`. Masukkan semua URL endpoint yang sudah kamu buat beserta contoh *request body*-nya. Jika sudah, klik kanan pada *Collection*, pilih **Export** (pilih v2.1), lalu kirim file `.json` tersebut ke **Salwa**.
+### 1. Afandi (Ketua & Order Service)
+- **Tugas Infrastruktur (SELESAI):** 
+  - *Cara Pengerjaan:* Memodifikasi file `docker-compose.yml`, menambahkan `init.sql` untuk men-generate 4 database secara otomatis (`user_db`, `product_db`, dll), dan menyalakan Hasura GraphQL Engine di port 8080.
+- **Tugas Service (Order Service):** 
+  - *Cara Pengerjaan:* 
+    1. Pastikan koneksi DB di `.env` (di dalam `orderService`) mengarah ke `DB_DATABASE=order_db` dan `DB_HOST=cafe-db`.
+    2. Jalankan `docker exec -it order-service php artisan migrate` untuk testing tabel.
+    3. Buat *Controller* (`OrderController`) untuk menangani logika REST API pemesanan barang.
+    4. Sambungkan Hasura (di `http://localhost:8080`) ke MySQL `order_db` agar memiliki fitur GraphQL.
 
 ---
 
-## 3. Salwa (Product Service)
-**Fokus Repository:** `productService`
-
-**Tugas Utama & Cara Pengerjaan:**
-- **Service Development (Product):**
-  - **Cara Koneksi DB:** Sama seperti Vincent, atur `.env` dengan `DB_DATABASE=product_db` dan `DB_HOST=cafe-db`.
-  - **Pembuatan API:** Buat REST API untuk CRUD Produk (Create, Read, Update, Delete) di `ProductController`.
-  - **RabbitMQ (Producer):** Di bagian kode fungsi *Checkout/Buy*, tambahkan kode *publisher* RabbitMQ (menggunakan package `php-amqplib` atau `rabbitmq-laravel`) untuk mengirim pesan antrean ke *Payment Service*.
-  - **GraphQL:** Pastikan tabel `products` sudah kamu *track* di Dashboard Hasura agar bisa di-query via GraphQL.
-- **Tugas Ekstra (Integrasi Postman):**
-  - **Cara:** Kumpulkan file `.json` Postman dari Afandi, Vincent, dan Niken.
-  - Di Postman kamu, klik **Import** dan masukkan semua file tersebut.
-  - Gabungkan semuanya ke dalam 1 *Master Collection* bernama `Cafe Microservices API` yang berisi folder-folder (User, Product, Order, Payment).
-  - Ekspor hasil akhirnya dan berikan link/file JSON-nya ke **Niken**.
+### 2. Vincent (User Service)
+- **Tugas Utama:** Mengerjakan REST API & GraphQL untuk fitur-fitur yang berkaitan dengan *User* (seperti Login, Register, Profile).
+- **Cara Pengerjaan (Langkah Teknis):**
+  1. **Koneksi Database:** Masuk ke folder `userService`, *copy* file `.env.example` menjadi `.env`. Ubah nilai di dalamnya menjadi: `DB_HOST=cafe-db`, `DB_PORT=3306`, `DB_DATABASE=user_db`, `DB_USERNAME=root`, `DB_PASSWORD=root`.
+  2. **Migrasi:** Buka terminal di luar folder, jalankan `docker exec -it user-service php artisan migrate` untuk mengirim struktur tabel ke database `user_db`.
+  3. **Buat REST API:** Buat Controller dengan perintah `php artisan make:controller UserController`. Daftarkan *routing*-nya di file `routes/api.php`.
+  4. **Postman:** Buka aplikasi Postman, tes semua endpoint (URL) yang sudah dibuat. Simpan semua tes tersebut dalam satu *Collection* bernama "User Service", klik kanan Export ke format `.json`, lalu kirim file tersebut ke Salwa.
+  5. **GraphQL:** Sama seperti Afandi, *track* tabel `users` di dashboard Hasura agar bisa di-query menggunakan GraphQL.
 
 ---
 
-## 4. Niken (Payment Service)
-**Fokus Repository:** `paymentService`
-
-**Tugas Utama & Cara Pengerjaan:**
-- **Service Development (Payment):**
-  - **Cara Koneksi DB:** Atur `.env` dengan `DB_DATABASE=payment_db` dan `DB_HOST=cafe-db`.
-  - **Pembuatan API:** Buat API untuk status pembayaran.
-  - **RabbitMQ (Consumer):** Buat worker/job (`php artisan make:job ProcessPayment`) yang terus mendengarkan *(listen)* antrean *(queue)* dari `productService` atau `orderService`. Ubah status pembayaran di database ketika pesan diterima dari RabbitMQ.
-  - **GraphQL:** Track tabel `payments` di Hasura.
-- **Tugas Ekstra (Dokumentasi Arsitektur & PDF):** 
-  - **Cara Arsitektur:** Gunakan alat seperti **Draw.io** (app.diagrams.net) atau **Miro**. Gambarkan diagram kotak-kotak yang menunjukkan bagaimana Docker mengikat `cafe-db`, `rabbitmq`, `hasura`, dan ke-4 service kalian. Beri panah komunikasi antar servicenya.
-  - **Cara Laporan PDF:** Buka Microsoft Word/Google Docs. Buat format laporan. Masukkan *Screenshot* Hasura, *Screenshot* Postman dari Salwa, Diagram Arsitektur, dan link-link GitHub kalian. Simpan sebagai PDF untuk diserahkan ke dosen.
+### 3. Salwa (Product Service & Dokumentasi API)
+- **Tugas Utama:** Mengerjakan REST API Product, GraphQL Product, mengatur *Publisher* RabbitMQ, dan menyusun Master Collection Postman.
+- **Cara Pengerjaan (Langkah Teknis):**
+  1. **Koneksi Database:** Masuk ke folder `productService`, atur file `.env` dengan `DB_HOST=cafe-db` dan `DB_DATABASE=product_db`.
+  2. **Migrasi:** Jalankan `docker exec -it product-service php artisan migrate`.
+  3. **Buat REST API:** Buat `ProductController` untuk operasi CRUD (Create, Read, Update, Delete) data produk.
+  4. **RabbitMQ (Producer):** Pada saat proses *checkout* produk terjadi, tambahkan kode untuk mem-*publish* (mengirim) pesan antrean ke RabbitMQ (misalnya ke *Payment Service* agar pembayarannya diproses).
+  5. **Tugas Postman (Penting!):** Minta file ekspor `.json` Postman dari Vincent, Afandi, dan Niken. Import semuanya ke Postman-mu, satukan ke dalam sebuah koleksi besar bernama **"Cafe Microservices API"**. Export koleksi akhir tersebut dan berikan ke Niken untuk dimasukkan ke laporan.
 
 ---
 
-## ⏳ Timeline & Urutan Pengerjaan (Workflow)
+### 4. Niken (Payment Service & Laporan Akhir)
+- **Tugas Utama:** Mengerjakan REST API Payment, GraphQL Payment, mengatur *Consumer* RabbitMQ, dan menyusun Dokumen PDF Final & Diagram.
+- **Cara Pengerjaan (Langkah Teknis):**
+  1. **Koneksi Database:** Masuk ke folder `paymentService`, atur file `.env` dengan `DB_HOST=cafe-db` dan `DB_DATABASE=payment_db`.
+  2. **Migrasi:** Jalankan `docker exec -it payment-service php artisan migrate`.
+  3. **RabbitMQ (Consumer):** Buat worker/job (`php artisan make:job ProcessPayment`) yang tugasnya *standby* dan mendengarkan antrean dari RabbitMQ. Jika ada pesan masuk dari Salwa/Afandi, ubah status pembayaran di database menjadi "Sukses".
+  4. **Diagram Arsitektur:** Buka web seperti `app.diagrams.net` (Draw.io). Gambarkan kotak-kotak arsitektur sistem kita (Docker, MySQL, RabbitMQ, Hasura, dan 4 microservices kalian). Tarik garis panah yang menunjukkan bagaimana mereka saling berkomunikasi.
+  5. **Laporan PDF:** Buat dokumen di Word/Google Docs. Masukkan screenshot Postman, screenshot Hasura, diagram arsitektur yang barusan dibuat, dan cantumkan link GitHub kelompok. Ekspor ke format PDF untuk dinilai oleh dosen.
 
-Pengerjaan ini dilakukan secara bertahap. Pastikan setiap anggota mengerti cara mengeksekusi fasenya:
+---
 
-### Fase 1: Persiapan Infrastruktur (Oleh Afandi)
-- **Kapan:** Sekarang / Minggu ini.
-- **Apa yang dilakukan:** 
-  1. Afandi mengedit `docker-compose.yml` untuk setup Hasura dan init script 4 database.
-  2. Afandi mengetes `docker-compose up -d` di PC-nya.
-  3. Afandi mem-push hasilnya ke repo `cafe-docker-compose`.
-- **Yang dilakukan anggota lain:** Menunggu aba-aba "Fase 1 Selesai" dari Afandi.
+## Urutan Pengerjaan Tim (Workflow)
 
-### Fase 2: Pengerjaan Service (Oleh Semua Anggota Bersamaan)
-- **Kapan:** Setelah Fase 1 selesai (Bisa dikerjakan paralel oleh Afandi, Vincent, Salwa, Niken).
-- **Langkah Kerja Harian:**
-  1. Buka folder `cafe-docker-compose` di terminal, jalankan `git pull origin main` (untuk mengambil update terbaru dari Afandi).
-  2. Jalankan `docker-compose up -d` untuk menghidupkan seluruh sistem.
-  3. Buka folder service milik kalian sendiri (misal: `cd ../userService`).
-  4. Lakukan *coding* membuat API, mengubah `.env`, dan migration.
-  5. **Cara test kode:** Gunakan Postman untuk nembak `localhost:8000` (User), `localhost:8001` (Product), dsb.
-  6. Jika hari itu sudah selesai *coding*, selalu jalankan: `git add .` -> `git commit -m "update fitur X"` -> `git push -u origin main`.
-
-### Fase 3: Integrasi, Testing, & Laporan (Oleh Salwa & Niken)
-- **Kapan:** Menjelang minggu pengumpulan (Minggu 15 / 16).
-- **Langkah Kerja:**
-  1. Pastikan semua *push* GitHub setiap anggota sudah 100% beres.
-  2. **Salwa** menagih ekspor `.json` Postman dari grup, merapikannya, dan menyerahkannya ke Niken.
-  3. **Niken** men-screenshot hasil Postman, memastikan Hasura Console di `localhost:8080` terlihat rapi, menggambar arsitektur diagram, lalu menyusun PDF-nya.
-  4. Semua anggota melakukan ujicoba presentasi secara offline.
+- **Fase 1 (Selesai):** Afandi mensetup infrastruktur Docker.
+- **Fase 2 (Sedang Berjalan):** Semua anggota menarik (pull) update Docker, melakukan *setup* koneksi `.env` ke database masing-masing, melakukan migrasi `php artisan migrate`, lalu **mengerjakan service-nya secara bersamaan (paralel)** tanpa perlu saling tunggu.
+- **Fase 3 (Akhir):** Setelah semua service selesai dikoding, Salwa merapikan Postman, dan Niken menyatukan laporan PDF untuk dikumpulkan ke dosen.
