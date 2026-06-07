@@ -26,6 +26,20 @@ services:
     networks:
       - cafe-network
 
+  # Postgres for Order Service (used by Hasura GraphQL)
+  order-postgres-db:
+    image: postgres:15
+    container_name: order-postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: order_password
+    volumes:
+      - order_pg_data:/var/lib/postgresql/data
+    networks:
+      - cafe-network
+
   # Hasura GraphQL Engine
   hasura:
     image: hasura/graphql-engine:v2.33.0
@@ -34,6 +48,7 @@ services:
       - "8080:8080"
     depends_on:
       - hasura-metadata-db
+      - order-postgres-db
       - db
     restart: always
     environment:
@@ -96,7 +111,7 @@ services:
     networks:
       - cafe-network
 
-  # Order Service
+  # Order Service (menggunakan PostgreSQL agar bisa ditrack Hasura)
   order-service:
     build:
       context: ../orderService
@@ -106,12 +121,14 @@ services:
     volumes:
       - ../orderService:/var/www
     environment:
-      DB_HOST: cafe-db
+      DB_CONNECTION: pgsql
+      DB_HOST: order-postgres-db
+      DB_PORT: 5432
       DB_DATABASE: order_db
-      DB_USERNAME: root
-      DB_PASSWORD: root
+      DB_USERNAME: order_user
+      DB_PASSWORD: order_password
     depends_on:
-      - db
+      - order-postgres-db
       - rabbitmq
       - user-service
       - product-service
@@ -183,3 +200,4 @@ networks:
 volumes:
   db_data:
   hasura_db_data:
+  order_pg_data:
