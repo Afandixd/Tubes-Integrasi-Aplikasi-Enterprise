@@ -3,10 +3,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use App\Models\Order;
+use App\Jobs\UpdateProductStock;
+use App\Jobs\ProcessPayment;
 
 function fetchOrderDetails($order) {
-    $userResponse = Http::get("http://localhost:8001/api/users/{$order->user_id}");
-    $productResponse = Http::get("http://localhost:8002/api/products/{$order->product_id}");
+    $userServiceUrl = env('USER_SERVICE_URL', 'http://localhost:8000');
+    $productServiceUrl = env('PRODUCT_SERVICE_URL', 'http://localhost:8001');
+
+    $userResponse = Http::get("{$userServiceUrl}/api/users/{$order->user_id}");
+    $productResponse = Http::get("{$productServiceUrl}/api/products/{$order->product_id}");
 
     $user = $userResponse->json();
     $product = $productResponse->json();
@@ -34,21 +39,46 @@ function fetchOrderDetails($order) {
 }
 
 Route::post('/orders', function (Request $request) {
-    $userId = $request->user_id;
-    $productId = $request->product_id;
+    try {
+        $userId = $request->user_id;
+        $productId = $request->product_id;
+        $quantity = $request->quantity ?? 1;
 
-    if (!$userId || !$productId) {
-        return response()->json(["message" => "User ID and Product ID are required"], 400);
+        if (!$userId || !$productId) {
+            return response()->json(["message" => "User ID dan Product ID harus diisi"], 400);
+        }
+
+        // TEMPORARY: Product validation disabled for demo
+        // Will be enabled when Salwa's Product Service is ready
+        $productData = ['price' => 100000]; // Mock data for demo
+
+        // Simpan Order
+        $order = Order::create([
+            "user_id" => $userId,
+            "product_id" => $productId,
+            "status" => "pending"
+        ]);
+
+        $totalPrice = $productData['price'] * $quantity;
+
+        // Kirim ke RabbitMQ
+        UpdateProductStock::dispatch($productId, $quantity)->onQueue('product_queue');
+        ProcessPayment::dispatch($order->id, $totalPrice)->onQueue('payment_queue');
+
+        return fetchOrderDetails($order);
+
+    } catch (\Throwable $e) {
+        // Ini akan menampilkan pesan error aslinya di Postman
+        return response()->json([
+            "error_asli" => $e->getMessage(),
+            "file" => $e->getFile(),
+            "line" => $e->getLine()
+        ], 500);
     }
-
-    $order = Order::create([
-        "user_id" => $userId,
-        "product_id" => $productId,
-        "status" => "pending"
-    ]);
-
-    return fetchOrderDetails($order);
 });
+
+
+
 
 Route::get('/orders', function () {
     $orders = Order::all();

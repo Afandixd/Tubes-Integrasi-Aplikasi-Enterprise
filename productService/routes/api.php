@@ -10,7 +10,8 @@ Route::get('/products', function () {
 Route::post('/products', function (Request $request) {
     $product = Product::create([
         "name" => $request->name,
-        "price" => $request->price
+        "price" => $request->price,
+        "stock" => $request->stock ?? 10
     ]);
     return ["message" => "Product created", "data" => $product];
 });
@@ -23,8 +24,17 @@ Route::put('/products/{id}', function (Request $request, $id) {
     $product = Product::find($id);
     if (!$product) return response()->json(["message" => "Product not found"], 404);
     
-    $product->update($request->only(['name', 'price']));
+    $product->update($request->only(['name', 'price', 'stock']));
     return ["message" => "Product updated", "data" => $product];
+});
+
+// Jalur pintas untuk update stok via POST (lebih stabil)
+Route::post('/products/{id}/update-stock', function (Request $request, $id) {
+    $product = Product::find($id);
+    if (!$product) return response()->json(["message" => "Product not found"], 404);
+    
+    $product->update(['stock' => $request->stock]);
+    return ["message" => "Stock updated via POST", "data" => $product];
 });
 
 Route::delete('/products/', function () {

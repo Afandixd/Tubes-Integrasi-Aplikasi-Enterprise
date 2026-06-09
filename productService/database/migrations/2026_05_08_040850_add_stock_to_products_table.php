@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payments', function (Blueprint $table) {
-            $table->id();
-            $table->integer('order_id');
-            $table->string('status')->default('LUNAS');
-            $table->timestamps();
+        Schema::table('products', function (Blueprint $table) {
+            $table->integer("stock")->default(10);
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payments');
+        Schema::table('products', function (Blueprint $table) {
+            //
+        });
     }
 };

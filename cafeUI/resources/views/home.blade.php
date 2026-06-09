@@ -170,7 +170,7 @@
     <div class="grid">
         <!-- Service Status -->
         <div class="card" style="grid-column: span 2">
-            <h3>🌐 Service Connectivity <button onclick="checkServices()" style="margin-left: auto; padding: 6px 12px; font-size: 0.8rem">Refresh</button></h3>
+            <h3> Service Connectivity <button onclick="checkServices()" style="margin-left: auto; padding: 6px 12px; font-size: 0.8rem">Refresh</button></h3>
             <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px">
                 <div class="service-row">
                     <span>User Service</span>
@@ -193,7 +193,7 @@
 
         <!-- Order Creation -->
         <div class="card">
-            <h3>🛒 Place New Order</h3>
+            <h3> Place New Order</h3>
             <div class="form-group">
                 <input type="number" id="user_id" placeholder="User ID" min="1">
                 <input type="number" id="product_id" placeholder="Product ID" min="1">
@@ -204,7 +204,7 @@
 
         <!-- Payment Process -->
         <div class="card">
-            <h3>💳 Payment Gateway</h3>
+            <h3> Payment Gateway</h3>
             <div class="form-group">
                 <input type="number" id="order_id_input" placeholder="Order ID" min="1">
             </div>
