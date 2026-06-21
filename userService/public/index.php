@@ -3,13 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
-// Polyfill untuk memperbaiki Fatal Error request_parse_body di Docker
-if (!function_exists('request_parse_body')) {
-    function request_parse_body() {
-        return [[], []];
-    }
-}
-
 define('LARAVEL_START', microtime(true));
 
 // Determine if the application is in maintenance mode...
