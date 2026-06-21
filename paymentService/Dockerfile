@@ -1,4 +1,5 @@
-FROM php:8.2-fpm
+FROM php:8.4-fpm
+
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -15,19 +16,20 @@ RUN apt-get update && apt-get install -y \
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Get latest Composer
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
+# Working directory
 WORKDIR /var/www
 
-# Copy existing application directory contents
+# Copy source code
 COPY . .
 
-# Install dependencies
+# Install Laravel dependencies
 RUN composer install --ignore-platform-reqs
 
-# Expose port 8003
+# Expose port
 EXPOSE 8003
 
+# Run Laravel
 CMD php artisan serve --host=0.0.0.0 --port=8003
