@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7e5ca0ff28c11cd881e4492430968297",
+    "content-hash": "68e96937865fdbd1472bc63eb5c70634",
     "packages": [
         {
             "name": "brick/math",
@@ -6040,16 +6040,16 @@
         },
         {
             "name": "vladimir-yuldashev/laravel-queue-rabbitmq",
-            "version": "v14.5.3",
+            "version": "v15.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vyuldashev/laravel-queue-rabbitmq.git",
-                "reference": "63e5c375fa383cd3778a32c7ccf84b98764613c8"
+                "reference": "fd685fa1a890b82011e9cf25d990e14221c395ad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vyuldashev/laravel-queue-rabbitmq/zipball/63e5c375fa383cd3778a32c7ccf84b98764613c8",
-                "reference": "63e5c375fa383cd3778a32c7ccf84b98764613c8",
+                "url": "https://api.github.com/repos/vyuldashev/laravel-queue-rabbitmq/zipball/fd685fa1a890b82011e9cf25d990e14221c395ad",
+                "reference": "fd685fa1a890b82011e9cf25d990e14221c395ad",
                 "shasum": ""
             },
             "require": {
@@ -6098,9 +6098,9 @@
             "description": "RabbitMQ driver for Laravel Queue. Supports Laravel Horizon.",
             "support": {
                 "issues": "https://github.com/vyuldashev/laravel-queue-rabbitmq/issues",
-                "source": "https://github.com/vyuldashev/laravel-queue-rabbitmq/tree/v14.5.3"
+                "source": "https://github.com/vyuldashev/laravel-queue-rabbitmq/tree/v15.0.0"
             },
-            "time": "2026-05-04T16:05:48+00:00"
+            "time": "2026-05-22T11:14:51+00:00"
         },
         {
             "name": "vlucas/phpdotenv",
@@ -8389,12 +8389,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.6.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
 }
