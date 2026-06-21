@@ -1,141 +1,96 @@
+version: '3.8'
+
 services:
-  # Database MySQL (Multi-database)
-  db:
+  # 1. DATABASE UTAMA (MySQL untuk User, Product, Payment)
+  cafe-db:
     image: mysql:8.0
     container_name: cafe-db
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
-      - db_data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d
+      - cafe_db_data:/var/lib/mysql
     networks:
       - cafe-network
 
-  # Postgres for Hasura Metadata
-  hasura-metadata-db:
-    image: postgres:15
-    container_name: hasura-metadata-db
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: postgrespassword
-    volumes:
-      - hasura_db_data:/var/lib/postgresql/data
-    networks:
-      - cafe-network
-
-  # Postgres for Order Service (used by Hasura GraphQL)
-  order-postgres-db:
-    image: postgres:15
-    container_name: order-postgres-db
-    restart: always
-    environment:
-      POSTGRES_DB: order_db
-      POSTGRES_USER: order_user
-      POSTGRES_PASSWORD: order_password
-    volumes:
-      - order_pg_data:/var/lib/postgresql/data
-    networks:
-      - cafe-network
-
-  # Hasura GraphQL Engine
-  hasura:
-    image: hasura/graphql-engine:v2.33.0
-    container_name: cafe-hasura
-    ports:
-      - "8080:8080"
-    depends_on:
-      - hasura-metadata-db
-      - order-postgres-db
-      - db
-    restart: always
-    environment:
-      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@hasura-metadata-db:5432/postgres
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-      HASURA_GRAPHQL_DEV_MODE: "true"
-      HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
-    networks:
-      - cafe-network
-
-  # RabbitMQ
-  rabbitmq:
+  # 2. MESSAGE BROKER ASINKRON (RabbitMQ)
+  cafe-rabbitmq:
     image: rabbitmq:3-management
     container_name: cafe-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
     networks:
       - cafe-network
 
-  # User Service
+  # 3. DATABASE INTERNAL HASURA (PostgreSQL)
+  hasura-metadata-db:
+    image: postgres:15
+    container_name: hasura-metadata-db
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: hasura_metadata
+    ports:
+      - "5432:5432"
+    networks:
+      - cafe-network
+
+  # 4. GRAPHQL ENGINE (Hasura Gateway)
+  hasura:
+    image: hasura/graphql-engine:v2.38.0
+    container_name: cafe-hasura
+    ports:
+      - "8080:8080"
+    depends_on:
+      - hasura-metadata-db
+    environment:
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:postgrespassword@hasura-metadata-db:5432/hasura_metadata
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+    networks:
+      - cafe-network
+
+  # 5. USER SERVICE (Vincent)
   user-service:
     build:
       context: ../userService
     container_name: user-service
     ports:
       - "8000:8000"
-    volumes:
-      - ../userService:/var/www
-    environment:
-      DB_HOST: cafe-db
-      DB_DATABASE: user_db
-      DB_USERNAME: root
-      DB_PASSWORD: root
     depends_on:
-      - db
+      - cafe-db
     networks:
       - cafe-network
 
-  # Product Service
+  # 6. PRODUCT SERVICE (Salwa)
   product-service:
     build:
       context: ../productService
     container_name: product-service
     ports:
       - "8001:8001"
-    volumes:
-      - ../productService:/var/www
-    environment:
-      DB_HOST: cafe-db
-      DB_DATABASE: product_db
-      DB_USERNAME: root
-      DB_PASSWORD: root
     depends_on:
-      - db
-      - rabbitmq
+      - cafe-db
+      - cafe-rabbitmq
     networks:
       - cafe-network
 
-  # Order Service (menggunakan PostgreSQL agar bisa ditrack Hasura)
+  # 7. ORDER SERVICE (Kamu)
   order-service:
     build:
       context: ../orderService
     container_name: order-service
     ports:
       - "8002:8002"
-    volumes:
-      - ../orderService:/var/www
-    environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: order-postgres-db
-      DB_PORT: 5432
-      DB_DATABASE: order_db
-      DB_USERNAME: order_user
-      DB_PASSWORD: order_password
     depends_on:
-      - order-postgres-db
-      - rabbitmq
-      - user-service
-      - product-service
+      - hasura-metadata-db
+      - cafe-rabbitmq
     networks:
       - cafe-network
 
-  # Payment Service
+  # 8. PAYMENT SERVICE (Niken)
   payment-service:
     build:
       context: ../paymentService
@@ -145,36 +100,18 @@ services:
     volumes:
       - ../paymentService:/var/www
     environment:
+      DB_CONNECTION: mysql
       DB_HOST: cafe-db
+      DB_PORT: 3306
       DB_DATABASE: payment_db
       DB_USERNAME: root
       DB_PASSWORD: root
     depends_on:
-      - db
-      - rabbitmq
+      - cafe-db
     networks:
       - cafe-network
 
-  # Worker Product
-  product-worker:
-    build:
-      context: ../productService
-    container_name: product-worker
-    command: php artisan queue:work rabbitmq --queue=product_queue
-    volumes:
-      - ../productService:/var/www
-    environment:
-      DB_HOST: cafe-db
-      DB_DATABASE: product_db
-      DB_USERNAME: root
-      DB_PASSWORD: root
-    depends_on:
-      - rabbitmq
-      - db
-    networks:
-      - cafe-network
-
-  # Worker Payment
+  # 9. PAYMENT WORKER (Niken)
   payment-worker:
     build:
       context: ../paymentService
@@ -183,13 +120,14 @@ services:
     volumes:
       - ../paymentService:/var/www
     environment:
+      DB_CONNECTION: mysql
       DB_HOST: cafe-db
+      DB_PORT: 3306
       DB_DATABASE: payment_db
       DB_USERNAME: root
       DB_PASSWORD: root
     depends_on:
-      - rabbitmq
-      - db
+      - cafe-rabbitmq
     networks:
       - cafe-network
 
@@ -198,6 +136,4 @@ networks:
     driver: bridge
 
 volumes:
-  db_data:
-  hasura_db_data:
-  order_pg_data:
+  cafe_db_data:
